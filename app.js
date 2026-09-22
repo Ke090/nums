@@ -1,82 +1,23 @@
-const homeScreen = document.querySelector('#homeScreen');
-const gameScreen = document.querySelector('#gameScreen');
-const playArea = document.querySelector('#playArea');
-const goalPanel = document.querySelector('#goalPanel');
-const goalNumber = document.querySelector('#goalNumber');
-const instruction = document.querySelector('#instruction');
-const splitDialog = document.querySelector('#splitDialog');
-const splitChoices = document.querySelector('#splitChoices');
-const colors = ['#ef5d63','#f3ad3e','#4bb8dc','#71c78b','#8974cf','#f184ad','#4fc3aa','#f08054','#719be0','#9c72c5'];
-let mode = 'free', goal = 5, audioOn = true, audioContext, drag, longPress;
-
-function speech(text) {
-  if (!audioOn || !('speechSynthesis' in window)) return;
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'ja-JP'; utterance.rate = .8; utterance.pitch = 1.15;
-  speechSynthesis.speak(utterance);
-}
-
-function tone(type='tap') {
-  if (!audioOn) return;
-  audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
-  const now = audioContext.currentTime;
-  const notes = type === 'win' ? [523,659,784,1047] : type === 'merge' ? [330,523,784] : type === 'split' ? [650,440] : [520];
-  notes.forEach((frequency, index) => {
-    const oscillator = audioContext.createOscillator(), gain = audioContext.createGain();
-    oscillator.type = type === 'win' ? 'triangle' : 'sine'; oscillator.frequency.value = frequency;
-    gain.gain.setValueAtTime(.001, now + index * .07); gain.gain.exponentialRampToValueAtTime(.13, now + index * .07 + .015); gain.gain.exponentialRampToValueAtTime(.001, now + index * .07 + .18);
-    oscillator.connect(gain).connect(audioContext.destination); oscillator.start(now + index * .07); oscillator.stop(now + index * .07 + .2);
-  });
-}
-
-function createBlock(value, x, y, animate=false) {
-  const block = document.createElement('button');
-  block.className = `number-block${animate ? ' pulse' : ''}`; block.textContent = value; block.dataset.value = value;
-  block.style.background = colors[(value - 1) % colors.length];
-  block.style.left = `${Math.max(8, Math.min(x, playArea.clientWidth - 120))}px`; block.style.top = `${Math.max(8, Math.min(y, playArea.clientHeight - 120))}px`;
-  block.addEventListener('pointerdown', startDrag); playArea.append(block); return block;
-}
-
-function startDrag(event) {
-  const block = event.currentTarget, rect = block.getBoundingClientRect(), area = playArea.getBoundingClientRect();
-  drag = { block, startX:event.clientX, startY:event.clientY, x:rect.left-area.left, y:rect.top-area.top, moved:false };
-  block.setPointerCapture(event.pointerId); block.classList.add('dragging'); tone('tap');
-  longPress = setTimeout(() => { if (!drag.moved) { block.releasePointerCapture(event.pointerId); drag=null; block.classList.remove('dragging'); openSplit(block); } }, 650);
-  block.addEventListener('pointermove', moveDrag); block.addEventListener('pointerup', endDrag, {once:true}); block.addEventListener('pointercancel', endDrag, {once:true});
-}
-function moveDrag(event) {
-  if (!drag) return; const dx=event.clientX-drag.startX, dy=event.clientY-drag.startY;
-  if (Math.hypot(dx,dy)>8) { drag.moved=true; clearTimeout(longPress); }
-  drag.block.style.left=`${Math.max(0,Math.min(drag.x+dx,playArea.clientWidth-drag.block.offsetWidth))}px`;
-  drag.block.style.top=`${Math.max(0,Math.min(drag.y+dy,playArea.clientHeight-drag.block.offsetHeight))}px`;
-}
-function endDrag() {
-  clearTimeout(longPress); if (!drag) return;
-  const {block,moved}=drag; block.classList.remove('dragging'); block.removeEventListener('pointermove',moveDrag);
-  if (!moved) { tone(); speech(numberName(+block.dataset.value)); drag=null; return; }
-  const a=block.getBoundingClientRect();
-  const target=[...document.querySelectorAll('.number-block')].find(other=>{ if(other===block)return false;const b=other.getBoundingClientRect();return Math.hypot(a.left+a.width/2-b.left-b.width/2,a.top+a.height/2-b.top-b.height/2)<75; });
-  if(target) mergeBlocks(block,target); drag=null;
-}
-function mergeBlocks(first, second) {
-  const sum=+first.dataset.value + +second.dataset.value, x=parseFloat(second.style.left), y=parseFloat(second.style.top);
-  first.remove(); second.remove(); const made=createBlock(sum,x,y,true); tone('merge'); setTimeout(()=>speech(numberName(sum)),120);
-  if(mode==='target' && sum===goal) celebrate(made);
-}
-function openSplit(block) {
-  const value=+block.dataset.value; if(value<2){speech('いちは わけられないよ');return;}
-  document.querySelector('#splitNumber').textContent=value; splitChoices.innerHTML='';
-  for(let left=1;left<=Math.floor(value/2);left++){const button=document.createElement('button');button.type='button';button.className='split-choice';button.textContent=`${left}　と　${value-left}`;button.onclick=()=>splitBlock(block,left,value-left);splitChoices.append(button)}
-  splitDialog.showModal(); speech(`${numberName(value)}を どう わける？`);
-}
-function splitBlock(block,left,right){const x=parseFloat(block.style.left),y=parseFloat(block.style.top);block.remove();splitDialog.close();createBlock(left,x-55,y,true);createBlock(right,x+70,y,true);tone('split');setTimeout(()=>speech(`${numberName(left)}、${numberName(right)}`),100)}
-function numberName(n){return ['','いち','に','さん','よん','ご','ろく','なな','はち','きゅう','じゅう'][n] || String(n)}
-function celebrate(block){tone('win');speech(`${numberName(goal)}、できた！`);instruction.textContent='できた！ すごい！';for(let i=0;i<55;i++){const c=document.createElement('i');c.className='confetti';c.style.left=`${Math.random()*100}%`;c.style.background=colors[i%colors.length];c.style.setProperty('--drift',`${Math.random()*180-90}px`);c.style.animationDelay=`${Math.random()*.35}s`;document.querySelector('#celebration').append(c)}const banner=document.createElement('div');banner.className='success-banner';banner.textContent='できた！ ★';document.querySelector('#celebration').append(banner);setTimeout(()=>document.querySelector('#celebration').replaceChildren(),2200);block.classList.add('pulse')}
-function setupGame(selected){mode=selected;homeScreen.classList.remove('active');gameScreen.classList.add('active');gameScreen.classList.toggle('free',mode==='free');playArea.replaceChildren();instruction.textContent=mode==='free'?'ブロックを じゆうに うごかそう！':'ブロックを かさねてみよう！';if(mode==='target'){goal=[5,6,7,8][Math.floor(Math.random()*4)];goalNumber.textContent=goal;}const values=mode==='free'?[1,2,2,3,4]:goal===5?[1,2,3,4]:[1,2,3,4,5];requestAnimationFrame(()=>values.forEach((v,i)=>{const cols=window.innerWidth<600?2:values.length;const col=i%cols,row=Math.floor(i/cols);createBlock(v,45+col*((playArea.clientWidth-130)/Math.max(1,cols-1)),75+row*155,true)}));setTimeout(()=>speech(mode==='free'?'じゆうに あそぼう':`${numberName(goal)}を つくろう`),250)}
-document.querySelectorAll('.mode-card').forEach(button=>button.onclick=()=>setupGame(button.dataset.mode));
-document.querySelector('#backButton').onclick=()=>{gameScreen.classList.remove('active');homeScreen.classList.add('active');speech('どの あそびにする？')};
-document.querySelector('#homeButton').onclick=()=>{gameScreen.classList.remove('active');homeScreen.classList.add('active')};
-document.querySelector('#resetButton').onclick=()=>setupGame(mode);
-document.querySelector('#soundButton').onclick=e=>{audioOn=!audioOn;e.currentTarget.textContent=audioOn?'♪':'×';e.currentTarget.setAttribute('aria-label',audioOn?'音を切る':'音をつける');if(audioOn){tone();speech('おとを つけたよ')}};
-document.querySelector('#infoButton').onclick=()=>document.querySelector('#infoDialog').showModal();
+const $=s=>document.querySelector(s), homeScreen=$('#homeScreen'),gameScreen=$('#gameScreen'),playArea=$('#playArea'),goalNumber=$('#goalNumber'),instruction=$('#instruction'),splitDialog=$('#splitDialog'),splitChoices=$('#splitChoices');
+const colors=['#ef5d63','#f3ad3e','#4bb8dc','#71c78b','#8974cf','#f184ad','#4fc3aa','#f08054','#719be0','#9c72c5'],CELL=46,dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+const shapes={1:[[0,0]],2:[[0,0],[1,0]],3:[[0,0],[0,1],[1,1]],4:[[0,0],[1,0],[2,0],[1,1]],5:[[0,0],[0,1],[1,1],[2,1],[2,2]],6:[[0,0],[1,0],[0,1],[1,1],[0,2],[1,2]],7:[[0,0],[0,1],[1,1],[1,2],[2,2],[2,3],[3,3]],8:[[0,0],[1,0],[2,0],[0,1],[2,1],[0,2],[1,2],[2,2]],9:[[0,0],[1,0],[2,0],[0,1],[1,1],[2,1],[0,2],[1,2],[2,2]],10:[[0,0],[1,0],[2,0],[3,0],[0,1],[1,1],[2,1],[3,1],[1,2],[2,2]]};
+let mode='free',goal=5,audioOn=true,audioContext,drag,longPress;
+function speech(text){if(!audioOn||!('speechSynthesis'in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='ja-JP';u.rate=.8;u.pitch=1.15;speechSynthesis.speak(u)}
+function tone(type='tap'){if(!audioOn)return;audioContext||=new(window.AudioContext||window.webkitAudioContext)();const now=audioContext.currentTime,notes=type==='win'?[523,659,784,1047]:type==='merge'?[330,523,784]:type==='split'?[650,440]:[520];notes.forEach((f,i)=>{const o=audioContext.createOscillator(),g=audioContext.createGain();o.type=type==='win'?'triangle':'sine';o.frequency.value=f;g.gain.setValueAtTime(.001,now+i*.07);g.gain.exponentialRampToValueAtTime(.13,now+i*.07+.015);g.gain.exponentialRampToValueAtTime(.001,now+i*.07+.18);o.connect(g).connect(audioContext.destination);o.start(now+i*.07);o.stop(now+i*.07+.2)})}
+function normalize(c){const a=Math.min(...c.map(x=>x[0])),b=Math.min(...c.map(x=>x[1]));return c.map(([x,y])=>[x-a,y-b])}
+function defaultShape(n){if(shapes[n])return shapes[n].map(c=>[...c]);const w=Math.ceil(Math.sqrt(n));return Array.from({length:n},(_,i)=>[i%w,Math.floor(i/w)])}
+const cells=b=>JSON.parse(b.dataset.cells);
+function createBlock(value,x,y,animate=false,shape=defaultShape(value)){const cs=normalize(shape),b=document.createElement('button'),w=(Math.max(...cs.map(c=>c[0]))+1)*CELL-2,h=(Math.max(...cs.map(c=>c[1]))+1)*CELL-2;b.className=`number-block${animate?' pulse':''}`;b.dataset.value=value;b.dataset.cells=JSON.stringify(cs);b.setAttribute('aria-label',`${value}のブロック。${value}マス`);Object.assign(b.style,{width:`${w}px`,height:`${h}px`,left:`${Math.max(6,Math.min(x,playArea.clientWidth-w-6))}px`,top:`${Math.max(6,Math.min(y,playArea.clientHeight-h-6))}px`});const color=colors[(value-1)%colors.length];cs.forEach(([cx,cy])=>{const c=document.createElement('i');c.className='unit-cell';Object.assign(c.style,{left:`${cx*CELL}px`,top:`${cy*CELL}px`,background:color});b.append(c)});const label=document.createElement('span');label.className='block-value';label.textContent=value;b.append(label);b.onpointerdown=startDrag;playArea.append(b);return b}
+function startDrag(e){const b=e.currentTarget,r=b.getBoundingClientRect(),a=playArea.getBoundingClientRect();drag={block:b,startX:e.clientX,startY:e.clientY,x:r.left-a.left,y:r.top-a.top,moved:false};b.setPointerCapture(e.pointerId);b.classList.add('dragging');tone();longPress=setTimeout(()=>{if(drag&&!drag.moved){b.releasePointerCapture(e.pointerId);drag=null;b.classList.remove('dragging');openSplit(b)}},650);b.addEventListener('pointermove',moveDrag);b.addEventListener('pointerup',endDrag,{once:true});b.addEventListener('pointercancel',endDrag,{once:true})}
+function moveDrag(e){if(!drag)return;const dx=e.clientX-drag.startX,dy=e.clientY-drag.startY;if(Math.hypot(dx,dy)>8){drag.moved=true;clearTimeout(longPress)}drag.block.style.left=`${Math.max(0,Math.min(drag.x+dx,playArea.clientWidth-drag.block.offsetWidth))}px`;drag.block.style.top=`${Math.max(0,Math.min(drag.y+dy,playArea.clientHeight-drag.block.offsetHeight))}px`}
+function bestConnection(b){const moving=cells(b),bx=parseFloat(b.style.left),by=parseFloat(b.style.top);let best=null;document.querySelectorAll('.number-block').forEach(t=>{if(t===b)return;const fixed=cells(t),tx0=parseFloat(t.style.left),ty0=parseFloat(t.style.top),used=new Set(fixed.map(([x,y])=>`${x},${y}`));fixed.forEach(([tx,ty])=>dirs.forEach(([dx,dy])=>moving.forEach(([mx,my])=>{const ox=tx+dx-mx,oy=ty+dy-my;if(moving.some(([x,y])=>used.has(`${x+ox},${y+oy}`)))return;const sx=tx0+ox*CELL,sy=ty0+oy*CELL,d=Math.hypot(bx-sx,by-sy);if(!best||d<best.distance)best={target:t,ox,oy,distance:d}})))});return best&&best.distance<CELL*1.35?best:null}
+function endDrag(){clearTimeout(longPress);if(!drag)return;const{block,moved}=drag;block.classList.remove('dragging');block.removeEventListener('pointermove',moveDrag);if(!moved){tone();speech(numberName(+block.dataset.value));drag=null;return}const c=bestConnection(block);if(c)mergeBlocks(block,c);drag=null}
+function mergeBlocks(first,c){const second=c.target,fixed=cells(second),moving=cells(first),raw=[...fixed,...moving.map(([x,y])=>[x+c.ox,y+c.oy])],minX=Math.min(...raw.map(x=>x[0])),minY=Math.min(...raw.map(x=>x[1])),x=parseFloat(second.style.left)+minX*CELL,y=parseFloat(second.style.top)+minY*CELL,sum=+first.dataset.value + +second.dataset.value;first.remove();second.remove();const made=createBlock(sum,x,y,true,raw);tone('merge');setTimeout(()=>speech(numberName(sum)),120);if(mode==='target'&&sum===goal)celebrate(made)}
+function connected(cs){if(!cs.length)return false;const all=new Set(cs.map(([x,y])=>`${x},${y}`)),seen=new Set([`${cs[0][0]},${cs[0][1]}`]),q=[cs[0]];while(q.length){const[x,y]=q.shift();dirs.forEach(([dx,dy])=>{const k=`${x+dx},${y+dy}`;if(all.has(k)&&!seen.has(k)){seen.add(k);q.push([x+dx,y+dy])}})}return seen.size===cs.length}
+function partition(cs,n){const picked=[];function search(at){if(picked.length===n){const set=new Set(picked),a=picked.map(i=>cs[i]),b=cs.filter((_,i)=>!set.has(i));return connected(a)&&connected(b)?[a,b]:null}if(cs.length-at<n-picked.length)return null;for(let i=at;i<cs.length;i++){picked.push(i);const r=search(i+1);if(r)return r;picked.pop()}return null}return search(0)||[cs.slice(0,n),cs.slice(n)]}
+function openSplit(b){const n=+b.dataset.value;if(n<2){speech('いちは わけられないよ');return}$('#splitNumber').textContent=n;splitChoices.innerHTML='';for(let l=1;l<=Math.floor(n/2);l++){const button=document.createElement('button');button.type='button';button.className='split-choice';button.textContent=`${l}　と　${n-l}`;button.onclick=()=>splitBlock(b,l,n-l);splitChoices.append(button)}splitDialog.showModal();speech(`${numberName(n)}を どう わける？`)}
+function splitBlock(b,l,r){const x=parseFloat(b.style.left),y=parseFloat(b.style.top),parts=partition(cells(b),l);b.remove();splitDialog.close();createBlock(l,x-25,y,true,parts[0]);createBlock(r,x+Math.max(70,Math.sqrt(l)*CELL),y+30,true,parts[1]);tone('split');setTimeout(()=>speech(`${numberName(l)}、${numberName(r)}`),100)}
+function numberName(n){return['','いち','に','さん','よん','ご','ろく','なな','はち','きゅう','じゅう'][n]||String(n)}
+function celebrate(b){tone('win');speech(`${numberName(goal)}、できた！`);instruction.textContent='できた！ すごい！';for(let i=0;i<55;i++){const c=document.createElement('i');c.className='confetti';c.style.left=`${Math.random()*100}%`;c.style.background=colors[i%colors.length];c.style.setProperty('--drift',`${Math.random()*180-90}px`);c.style.animationDelay=`${Math.random()*.35}s`;$('#celebration').append(c)}const banner=document.createElement('div');banner.className='success-banner';banner.textContent='できた！ ★';$('#celebration').append(banner);setTimeout(()=>$('#celebration').replaceChildren(),2200);b.classList.add('pulse')}
+function setupGame(selected){mode=selected;homeScreen.classList.remove('active');gameScreen.classList.add('active');gameScreen.classList.toggle('free',mode==='free');playArea.replaceChildren();instruction.textContent=mode==='free'?'マスを ぴったり くっつけよう！':'かたちを つないで かずを つくろう！';if(mode==='target'){goal=[5,6,7,8][Math.floor(Math.random()*4)];goalNumber.textContent=goal}const values=mode==='free'?[1,2,2,3,4]:goal===5?[1,2,3,4]:[1,2,3,4,5];requestAnimationFrame(()=>values.forEach((v,i)=>{const cols=innerWidth<600?2:values.length,col=i%cols,row=Math.floor(i/cols);createBlock(v,35+col*((playArea.clientWidth-150)/Math.max(1,cols-1)),55+row*180,true)}));setTimeout(()=>speech(mode==='free'?'じゆうに あそぼう':`${numberName(goal)}を つくろう`),250)}
+document.querySelectorAll('.mode-card').forEach(b=>b.onclick=()=>setupGame(b.dataset.mode));$('#backButton').onclick=()=>{gameScreen.classList.remove('active');homeScreen.classList.add('active');speech('どの あそびにする？')};$('#homeButton').onclick=()=>{gameScreen.classList.remove('active');homeScreen.classList.add('active')};$('#resetButton').onclick=()=>setupGame(mode);$('#soundButton').onclick=e=>{audioOn=!audioOn;e.currentTarget.textContent=audioOn?'♪':'×';e.currentTarget.setAttribute('aria-label',audioOn?'音を切る':'音をつける');if(audioOn){tone();speech('おとを つけたよ')}};$('#infoButton').onclick=()=>$('#infoDialog').showModal();
