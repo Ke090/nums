@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#fffaf0" />
+    <title>かずブロック</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app" aria-live="polite">
+      <header class="topbar">
+        <button class="round-button sound-button" id="soundButton" aria-label="音を切り替える">♪</button>
+        <button class="brand" id="homeButton" aria-label="タイトルにもどる">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span>かずブロック</span>
+        </button>
+        <button class="round-button info-button" id="infoButton" aria-label="あそびかた">?</button>
+      </header>
+
+      <section class="screen home-screen active" id="homeScreen">
+        <div class="hero-copy">
+          <div class="eyebrow"><span>●</span> さわって、あわせて、ひらめこう！</div>
+          <h1>かずと なかよく<br /><em>なれる場所</em></h1>
+          <p>カラフルなブロックを くっつけたり、わけたり。<br />あそびながら かずのふしぎを みつけよう！</p>
+        </div>
+
+        <div class="mascot-stage" aria-hidden="true">
+          <div class="sparkle s1">✦</div><div class="sparkle s2">✦</div><div class="sparkle s3">●</div>
+          <div class="cube cube-one"><span>1</span><b class="eye left"></b><b class="eye right"></b><b class="smile"></b></div>
+          <div class="plus">＋</div>
+          <div class="cube cube-two"><span>2</span><b class="eye left"></b><b class="eye right"></b><b class="smile"></b></div>
+          <div class="equals">＝</div>
+          <div class="cube cube-three"><span>3</span><b class="eye left"></b><b class="eye right"></b><b class="smile"></b></div>
+          <div class="floor-shadow"></div>
+        </div>
+
+        <div class="mode-heading"><span></span><b>どの あそびにする？</b><span></span></div>
+        <div class="mode-grid">
+          <button class="mode-card free-card" data-mode="free">
+            <span class="mode-icon"><i class="mini-block a">1</i><i class="mini-block b">2</i><i class="mini-block c">3</i></span>
+            <span class="mode-text"><strong>じゆうに あそぶ</strong><small>すきなだけ くっつけよう！</small></span><b class="arrow">›</b>
+          </button>
+          <button class="mode-card target-card" data-mode="target">
+            <span class="mode-icon target-icon">★<i>5</i></span>
+            <span class="mode-text"><strong>つくってみよう</strong><small>おなじ かずを つくれるかな？</small></span><b class="arrow">›</b>
+          </button>
+        </div>
+        <div class="tip"><span>☝</span><p><b>あそびかた</b><br />ブロックを つかんで、ほかのブロックに かさねてみよう！</p></div>
+      </section>
+
+      <section class="screen game-screen" id="gameScreen">
+        <div class="game-toolbar">
+          <button class="back-button" id="backButton">‹ <span>もどる</span></button>
+          <div class="goal" id="goalPanel"><small>この かずを つくろう</small><strong id="goalNumber">5</strong></div>
+          <button class="reset-button" id="resetButton">↻ <span>やりなおす</span></button>
+        </div>
+        <div class="instruction" id="instruction">ブロックを かさねてみよう！</div>
+        <div class="play-area" id="playArea" aria-label="ブロックを動かすエリア"></div>
+        <p class="game-hint">タップで よみあげる　<span>•</span>　ながくおして わける</p>
+      </section>
+    </main>
+
+    <dialog id="splitDialog" class="split-dialog">
+      <form method="dialog">
+        <button class="dialog-close" value="cancel" aria-label="閉じる">×</button>
+        <h2><span id="splitNumber">5</span> を どう わける？</h2>
+        <div id="splitChoices" class="split-choices"></div>
+      </form>
+    </dialog>
+
+    <dialog id="infoDialog" class="info-dialog">
+      <form method="dialog"><button class="dialog-close" value="cancel">×</button><h2>あそびかた</h2><p>ブロックを ドラッグして、ほかのブロックに かさねよう。ながくおすと ふたつに わけられるよ！</p><button class="okay" value="ok">わかった！</button></form>
+    </dialog>
+    <div class="celebration" id="celebration" aria-hidden="true"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
