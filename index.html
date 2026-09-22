@@ -1,78 +1,85 @@
 <!doctype html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#fffaf0" />
-    <title>かずブロック</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <main class="app" aria-live="polite">
-      <header class="topbar">
-        <button class="round-button sound-button" id="soundButton" aria-label="音を切り替える">♪</button>
-        <button class="brand" id="homeButton" aria-label="タイトルにもどる">
-          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span>かずブロック</span>
-        </button>
-        <button class="round-button info-button" id="infoButton" aria-label="あそびかた">?</button>
-      </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#080d1b" />
+  <title>QuasiLab — 準周期構造探索</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="appbar">
+    <a class="brand" href="#" aria-label="QuasiLab home"><span class="brand-glyph">✣</span><span>QUASI<span>LAB</span></span></a>
+    <nav class="tabs" aria-label="Main navigation">
+      <button class="tab active" data-view="simulation"><i>◉</i> Simulation</button>
+      <button class="tab" data-view="search"><i>⌁</i> Auto Search</button>
+      <button class="tab" data-view="results"><i>▥</i> Results <b>24</b></button>
+    </nav>
+    <div class="app-actions"><button class="icon-btn" id="importBtn" title="Import JSON">↥</button><button class="icon-btn" id="exportBtn" title="Export JSON">↧</button><span class="divider"></span><span class="status-dot"></span><span class="status-label">ENGINE READY</span><button class="avatar">QL</button></div>
+  </header>
 
-      <section class="screen home-screen active" id="homeScreen">
-        <div class="hero-copy">
-          <div class="eyebrow"><span>●</span> さわって、あわせて、ひらめこう！</div>
-          <h1>かずと なかよく<br /><em>なれる場所</em></h1>
-          <p>カラフルなブロックを くっつけたり、わけたり。<br />あそびながら かずのふしぎを みつけよう！</p>
-        </div>
+  <main>
+    <section class="view active" id="simulationView">
+      <aside class="sidebar left-panel">
+        <div class="sidebar-head"><div><span class="kicker">MODEL PARAMETERS</span><h2>Particle System</h2></div><button class="tiny-icon" id="resetParams" title="Reset parameters">↻</button></div>
+        <div class="section open"><button class="section-title">SYSTEM <span>⌃</span></button><div class="section-body">
+          <label class="control-label"><span>Particles <em>N</em></span><output id="particleOut">256</output></label><input id="particleCount" type="range" min="60" max="500" value="256" />
+          <div class="control-row"><label>Density <em>ρ</em><input id="density" type="number" step=".01" value="0.65" /></label><label>Radius <em>R</em><input type="number" value="12.0" step=".1" /></label></div>
+          <label class="control-label"><span>Timestep <em>dt</em></span><output id="dtOut">0.002</output></label><input id="dt" type="range" min="1" max="10" value="2" />
+        </div></div>
+        <div class="section open"><button class="section-title">PARTICLE SPECIES <span>⌃</span></button><div class="section-body">
+          <div class="species-card"><div class="species-name"><i>A</i><strong>Patchy particle</strong><button>•••</button></div><div class="control-row"><label>Symmetry <em>m</em><select id="symmetry"><option>3</option><option>4</option><option selected>5</option><option>6</option><option>7</option><option>8</option><option>10</option><option>12</option></select></label><label>Size <em>σ</em><input type="number" value="1.00" step=".1" /></label></div>
+          <label class="control-label"><span>Patch width <em>σθ</em></span><output id="patchOut">0.18</output></label><input id="patchWidth" type="range" min="5" max="50" value="18" />
+          </div><button class="add-species">＋ Add species</button>
+        </div></div>
+        <div class="section open"><button class="section-title">INTERACTION POTENTIAL <span>⌃</span></button><div class="section-body">
+          <div class="potential-head"><span>Radial wells</span><button id="potentialBtn">View potential ↗</button></div>
+          <div class="well"><i class="well-line cyan"></i><b>r₁</b><input type="number" value="1.00" step=".05"><b>D₁</b><input type="number" value="1.00" step=".05"></div>
+          <div class="well"><i class="well-line violet"></i><b>r₂</b><input id="ratioInput" type="number" value="1.70" step=".05"><b>D₂</b><input type="number" value="0.72" step=".05"></div>
+          <label class="control-label"><span>Angular strength <em>εang</em></span><output id="angularOut">1.20</output></label><input id="angularStrength" type="range" min="0" max="250" value="120" />
+        </div></div>
+        <div class="section open"><button class="section-title">THERMAL CONTROL <span>⌃</span></button><div class="section-body">
+          <div class="control-row"><label>Schedule<select><option>Linear anneal</option><option>Constant</option><option>Exponential</option><option>Step anneal</option></select></label><label>Temperature<input id="temperature" type="number" value="0.18" step=".01" /></label></div>
+          <div class="mini-schedule"><svg viewBox="0 0 260 54" preserveAspectRatio="none"><path d="M2 8 L58 8 L205 44 L258 44"/><line x1="2" y1="44" x2="258" y2="44"/></svg><span>T high</span><span>T low</span></div>
+        </div></div>
+      </aside>
 
-        <div class="mascot-stage" aria-hidden="true">
-          <div class="sparkle s1">✦</div><div class="sparkle s2">✦</div><div class="sparkle s3">●</div>
-          <div class="cube cube-one"><span>1</span><b class="eye left"></b><b class="eye right"></b><b class="smile"></b></div>
-          <div class="plus">＋</div>
-          <div class="cube cube-two"><span>2</span><b class="eye left"></b><b class="eye right"></b><b class="smile"></b></div>
-          <div class="equals">＝</div>
-          <div class="cube cube-three"><span>3</span><b class="eye left"></b><b class="eye right"></b><b class="smile"></b></div>
-          <div class="floor-shadow"></div>
+      <section class="workspace">
+        <div class="workspace-bar"><div><span class="live-pill"><i></i> LIVE</span><strong>Dodecagonal candidate</strong><small>seed 847291 · step <span id="stepCounter">128,440</span></small></div><div class="sim-controls"><button id="restartBtn" title="Restart">↺</button><button class="play" id="playBtn" aria-label="Pause simulation">Ⅱ</button><button id="stepBtn" title="Single step">▷│</button><select id="speedSelect"><option>1×</option><option selected>2×</option><option>4×</option></select></div></div>
+        <div class="canvas-wrap">
+          <canvas id="particleCanvas"></canvas>
+          <div class="canvas-tools"><button class="active" id="patchToggle">✣ <span>Patches</span></button><button id="bondToggle">⌁ <span>Bonds</span></button><button id="velocityToggle">↗ <span>Velocity</span></button></div>
+          <div class="scale"><span></span>2σ</div>
+          <div class="canvas-readout"><div><span>FPS</span><b id="fps">60</b></div><div><span>WALL VIOLATIONS</span><b class="good">0</b></div></div>
         </div>
-
-        <div class="mode-heading"><span></span><b>どの あそびにする？</b><span></span></div>
-        <div class="mode-grid">
-          <button class="mode-card free-card" data-mode="free">
-            <span class="mode-icon"><i class="mini-block a">1</i><i class="mini-block b">2</i><i class="mini-block c">3</i></span>
-            <span class="mode-text"><strong>じゆうに あそぶ</strong><small>すきなだけ くっつけよう！</small></span><b class="arrow">›</b>
-          </button>
-          <button class="mode-card target-card" data-mode="target">
-            <span class="mode-icon target-icon">★<i>5</i></span>
-            <span class="mode-text"><strong>つくってみよう</strong><small>おなじ かずを つくれるかな？</small></span><b class="arrow">›</b>
-          </button>
-        </div>
-        <div class="tip"><span>☝</span><p><b>あそびかた</b><br />ブロックの はしを、ほかのブロックに ぴったり つなげよう！</p></div>
       </section>
 
-      <section class="screen game-screen" id="gameScreen">
-        <div class="game-toolbar">
-          <button class="back-button" id="backButton">‹ <span>もどる</span></button>
-          <div class="goal" id="goalPanel"><small>この かずを つくろう</small><strong id="goalNumber">5</strong></div>
-          <button class="reset-button" id="resetButton">↻ <span>やりなおす</span></button>
+      <aside class="analysis-panel">
+        <div class="analysis-head"><div><span class="kicker">REAL-TIME ANALYSIS</span><h2>Structure diagnostics</h2></div><button class="tiny-icon">⋮</button></div>
+        <article class="metric hero-metric"><div class="metric-title"><span>QC CANDIDATE SCORE <i title="Candidate score, not a proof">?</i></span><b>EXCELLENT</b></div><div class="score-row"><strong id="qcScore">0.842</strong><span>+0.018<br><small>last 5k steps</small></span></div><div class="score-track"><i></i><b></b></div><div class="score-labels"><span>fluid</span><span>candidate</span><span>ordered</span></div></article>
+        <div class="analysis-grid">
+          <article class="metric diffraction-card"><div class="metric-title"><span>STRUCTURE FACTOR <em>S(k)</em></span><button>↗</button></div><canvas id="diffractionCanvas" width="270" height="210"></canvas><div class="ring-label">k* = 6.18</div></article>
+          <article class="metric symmetry-card"><div class="metric-title"><span>ROTATIONAL ORDER</span></div><div class="q-bars" id="qBars"></div><div class="q-callout"><i>Q₁₂</i><strong>0.81</strong><span>dominant</span></div></article>
         </div>
-        <div class="instruction" id="instruction">ブロックを かさねてみよう！</div>
-        <div class="play-area" id="playArea" aria-label="ブロックを動かすエリア"></div>
-        <p class="game-hint">マスの かずが ブロックの かず　<span>•</span>　ながくおして わける</p>
-      </section>
-    </main>
+        <article class="metric chart-card"><div class="metric-title"><span>ORDER HISTORY</span><div class="legend"><i class="l12"></i>Q12 <i class="l6"></i>Q6</div></div><canvas id="historyCanvas" width="570" height="120"></canvas><div class="chart-axis"><span>100k</span><span>110k</span><span>120k</span><span>now</span></div></article>
+        <div class="bottom-metrics"><article class="metric"><span>BRAGG SHARPNESS</span><strong>0.76</strong><div class="microbar"><i style="width:76%"></i></div></article><article class="metric"><span>EDGE BIAS</span><strong>0.08</strong><div class="microbar warning"><i style="width:8%"></i></div></article><article class="metric energy"><span>ENERGY / PARTICLE</span><strong>−2.418</strong><small>PE −2.436 · KE 0.018</small></article></div>
+      </aside>
+    </section>
 
-    <dialog id="splitDialog" class="split-dialog">
-      <form method="dialog">
-        <button class="dialog-close" value="cancel" aria-label="閉じる">×</button>
-        <h2><span id="splitNumber">5</span> を どう わける？</h2>
-        <div id="splitChoices" class="split-choices"></div>
-      </form>
-    </dialog>
+    <section class="view page-view" id="searchView">
+      <div class="page-heading"><div><span class="kicker">PARAMETER EXPLORATION</span><h1>Auto Search</h1><p>Sobol sampling と Successive Halving により、有望な自己組織化条件を探索します。</p></div><button class="primary" id="searchStart">▶ Start search</button></div>
+      <div class="search-layout"><article class="panel search-config"><h3>Search space</h3><div class="form-grid"><label>Target symmetry<select><option>12-fold QC</option><option>10-fold QC</option><option>8-fold QC</option></select></label><label>Particle symmetry<select><option>5, 7</option><option>3–8</option><option>5 only</option></select></label><label>Trials<input type="number" value="128"></label><label>Workers<input type="number" value="7"></label></div><h4>VARIABLE RANGES</h4><div class="range-table"><div><b>Density ρ</b><span>0.40</span><i></i><span>0.85</span></div><div><b>Scale ratio r₂/r₁</b><span>1.40</span><i></i><span>2.10</span></div><div><b>Angular strength</b><span>0.20</span><i></i><span>2.50</span></div><div><b>Patch width σθ</b><span>0.08</span><i></i><span>0.40</span></div><div><b>Temperature high</b><span>0.20</span><i></i><span>0.90</span></div></div></article><article class="panel search-progress"><div class="metric-title"><span>SEARCH PROGRESS</span><b id="searchStatus">READY</b></div><div class="progress-ring"><strong id="progressNumber">0</strong><span>/ 128 trials</span></div><div class="progress-line"><i id="progressFill"></i></div><div class="search-stats"><div><span>Best QCScore</span><b>0.842</b></div><div><span>Best Q12</span><b>0.81</b></div><div><span>Stage</span><b id="stageLabel">—</b></div></div><canvas id="scatterCanvas" width="520" height="190"></canvas></article></div>
+    </section>
 
-    <dialog id="infoDialog" class="info-dialog">
-      <form method="dialog"><button class="dialog-close" value="cancel">×</button><h2>あそびかた</h2><p>マスの かずが、そのブロックの かずだよ。ブロックの はしを ドラッグで ぴったり くっつけよう。どこに つなぐかで、できる かたちも かわるよ！ ながくおすと ふたつに わけられるよ。</p><button class="okay" value="ok">わかった！</button></form>
-    </dialog>
-    <div class="celebration" id="celebration" aria-hidden="true"></div>
-    <script src="app.js"></script>
-  </body>
+    <section class="view page-view" id="resultsView">
+      <div class="page-heading"><div><span class="kicker">CANDIDATE LIBRARY</span><h1>Search Results</h1><p>複数 seed の平均スコアでランク付けされた準周期構造候補。</p></div><button class="secondary" id="csvBtn">↓ Export CSV</button></div>
+      <div class="results-summary"><article><span>COMPLETED TRIALS</span><b>128</b><small>3 search stages</small></article><article><span>TOP QC SCORE</span><b class="cyan-text">0.842</b><small>± 0.021 across seeds</small></article><article><span>VERIFIED CANDIDATES</span><b>6</b><small>5 seeds · N = 1024</small></article></div>
+      <div class="panel results-panel"><div class="result-tools"><strong>Top candidates</strong><span>Sorted by <select><option>QCScore ↓</option><option>Q12 ↓</option><option>Variance ↑</option></select></span></div><div class="result-list" id="resultList"></div></div>
+    </section>
+  </main>
+
+  <dialog id="potentialDialog"><button class="dialog-close" id="dialogClose">×</button><span class="kicker">PAIR INTERACTION</span><h2>Potential inspector</h2><p>5回対称パッチの距離・角度依存ポテンシャル。角度プロットには72°周期の等価な谷が現れます。</p><div class="dialog-charts"><div><h4>RADIAL · U(r)</h4><canvas id="radialCanvas" width="390" height="220"></canvas></div><div><h4>ANGULAR · U(α)</h4><canvas id="angularCanvas" width="390" height="220"></canvas></div></div></dialog>
+  <input id="fileInput" type="file" accept="application/json" hidden />
+  <script src="app.js"></script>
+</body>
 </html>
